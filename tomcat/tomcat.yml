@@ -1,0 +1,72 @@
+---
+- name: Tomcat installation playbook
+  hosts: all
+  tasks:
+    - name: Install wget
+      yum:
+        name: wget
+        state: latest
+ 
+    - name: create diretcory
+      file:
+        path: /usr/lib/jvm
+        state: directory
+        mode: 0755
+    
+    - name: Untar java
+      unarchive:
+        src: /var/tmp/jdk-8u144-linux-x64.tar.gz
+        dest: /usr/lib/jvm/
+        copy: no  
+        
+    - name: Change onwership
+      file:
+        path: /usr/lib/jvm/jdk1.8.0_144
+        owner: root
+        group: root
+        recurse: yes
+        
+    - name: Create java link
+      alternatives:
+        name: java
+        link: /usr/bin/java
+        path: /usr/lib/jvm/jdk1.8.0_144/bin/java
+        
+    - name: Select java
+      alternatives:
+        name: java
+        path: /usr/lib/jvm/jdk1.8.0_144/bin/java
+        
+    - name: Copy and Untar Tomcat
+      unarchive:
+        src: /var/tmp/apache-tomcat-8.5.24.tar.gz
+        dest: /opt/tomcat/
+        copy: no
+     
+    - name: Change onwership
+      file:
+        path: /opt/tomcat/apache-tomcat-8.5.24
+        owner: anoopkm
+        group: anoopkm
+        recurse: yes     
+        
+    - name: Copy users
+      template: 
+         src: tomcat-users.xml
+         dest: /opt/tomcat/apache-tomcat-8.5.24/conf/tomcat-users.xml
+
+    - name: Copy context.xml
+      template: 
+         src: context.xml
+         dest: /opt/tomcat/apache-tomcat-8.5.24/webapps/manager/META-INF/context.xml
+         
+    - name: Shutdown Tomcat
+      command: nohup sh /opt/tomcat/apache-tomcat-8.5.24/bin/shutdown.sh &
+      become: true
+      become_user: anoopkm
+
+    - name: Start Tomcat
+      command: nohup sh /opt/tomcat/apache-tomcat-8.5.24/bin/startup.sh &
+      become: true
+      become_user: anoopkm 
+
